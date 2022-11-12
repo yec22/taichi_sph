@@ -39,6 +39,11 @@ class Scene:
         self.init_scene()
 
     def add_stuff(self, stuff_type, pos_dim, v0):
+        pos_dim[0][0] = min(max(pos_dim[0][0], Support_Radius), GUI_Resolution[0]/Scale_Ratio-Support_Radius)
+        pos_dim[1][0] = min(max(pos_dim[1][0], Support_Radius), GUI_Resolution[0]/Scale_Ratio-Support_Radius)
+        pos_dim[0][1] = min(max(pos_dim[0][1], Support_Radius), GUI_Resolution[1]/Scale_Ratio-Support_Radius)
+        pos_dim[1][1] = min(max(pos_dim[1][1], Support_Radius), GUI_Resolution[1]/Scale_Ratio-Support_Radius)
+
         particle_pos_dim = [np.arange(pos_dim[0][0], pos_dim[0][1], Particle_Radius),
                             np.arange(pos_dim[1][0], pos_dim[1][1], Particle_Radius)]
         particle_pos = np.array(np.meshgrid(*particle_pos_dim, indexing='ij'), dtype=np.float32)

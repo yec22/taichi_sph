@@ -17,6 +17,9 @@ if __name__ == "__main__":
     cnt = 0
 
     while gui.running:
+        mouse = gui.get_cursor_pos()
+        gui.circle((mouse[0], mouse[1]), color=0xff0000, radius=7)
+
         if gui.get_event(ti.GUI.PRESS):
             if gui.event.key == 'q':
                 print("SPH simulation end ...")
@@ -29,6 +32,12 @@ if __name__ == "__main__":
 
                 filename = f'log/frame_{cnt:08d}.png'
                 gui.show(filename)
+            elif gui.event.key in [ti.GUI.LMB]:
+                mouse = gui.get_cursor_pos()
+                print("add particles ...", mouse[0], mouse[1])
+                particle_x = mouse[0] * GUI_Resolution[0] / Scale_Ratio
+                particle_y = mouse[1] * GUI_Resolution[1] / Scale_Ratio
+                sph_solver.scene.add_stuff(FLUID, [[particle_x-0.5, particle_x+0.5], [particle_y-0.5, particle_y+0.5]], [0.0, -10.0])
 
         sph_solver.solve()
         fluid_pos, boundary_pos = sph_solver.scene.get_particle_pos()
@@ -39,12 +48,6 @@ if __name__ == "__main__":
         gui.circles(pos=boundary_pos * Scale_Ratio / GUI_Resolution[0], # range: [0, 1]
                     radius=Particle_Radius * Visualize_Ratio * Scale_Ratio,
                     color=Boundary_Color)
-        
-        mouse = gui.get_cursor_pos()
-        gui.circle((mouse[0], mouse[1]), color=0xff0000, radius=7)
-        if gui.is_pressed(ti.GUI.LMB):
-            print("add particles ...")
-            sph_solver.scene.add_stuff(FLUID, [[mouse[0], mouse[0]+1.0], [mouse[1], mouse[1]+1.0]], [0.0, -10.0])
 
         cnt += 1
         gui.show()
