@@ -3,7 +3,7 @@ import numpy as np
 from model.WCSPH import *
 import os
 
-ti.init(arch=ti.gpu, device_memory_GB=4, packed=True)
+ti.init(arch=ti.cpu)
 
 
 if __name__ == "__main__":
@@ -17,9 +17,9 @@ if __name__ == "__main__":
     cnt = 0
 
     while gui.running:
-        for i in range(100):
-            sph_solver.solve()
+        sph_solver.solve()
         fluid_pos, boundary_pos = sph_solver.scene.get_particle_pos()
+
         gui.circles(pos=fluid_pos * Scale_Ratio / GUI_Resolution[0], # range: [0, 1]
                     radius=Particle_Radius * Visualize_Ratio * Scale_Ratio,
                     color=Particle_Color)
@@ -36,7 +36,7 @@ if __name__ == "__main__":
             filename = f'log/frame_{cnt:05d}.png'
             gui.show(filename)
         
-        if gui.get_event(ti.GUI.ESCAPE):
+        if gui.get_event(ti.GUI.EXIT):
             print("SPH simulation end ...")
             break
 
