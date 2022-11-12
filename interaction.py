@@ -17,6 +17,19 @@ if __name__ == "__main__":
     cnt = 0
 
     while gui.running:
+        if gui.get_event(ti.GUI.PRESS):
+            if gui.event.key == 'q':
+                print("SPH simulation end ...")
+                break
+            elif gui.event.key in [ti.GUI.SPACE]:
+                print("save results ...")
+                writer = ti.tools.PLYWriter(num_vertices=sph_solver.scene.N[None])
+                writer.add_vertex_pos(fluid_pos[:, 0], fluid_pos[:, 1], np.zeros_like(fluid_pos[:, 0]))
+                writer.export_frame_ascii(cnt, f'log/frame_{cnt:08d}')
+
+                filename = f'log/frame_{cnt:08d}.png'
+                gui.show(filename)
+
         sph_solver.solve()
         fluid_pos, boundary_pos = sph_solver.scene.get_particle_pos()
 
@@ -26,19 +39,6 @@ if __name__ == "__main__":
         gui.circles(pos=boundary_pos * Scale_Ratio / GUI_Resolution[0], # range: [0, 1]
                     radius=Particle_Radius * Visualize_Ratio * Scale_Ratio,
                     color=Boundary_Color)
-        
-        if gui.get_event(ti.GUI.SPACE):
-            print("save results ...")
-            writer = ti.tools.PLYWriter(num_vertices=sph_solver.scene.N[None])
-            writer.add_vertex_pos(fluid_pos[:, 0], fluid_pos[:, 1], np.zeros_like(fluid_pos[:, 0]))
-            writer.export_frame_ascii(cnt, f'log/frame_{cnt:08d}')
-
-            filename = f'log/frame_{cnt:08d}.png'
-            gui.show(filename)
-        
-        if gui.get_event(ti.GUI.BACKSPACE):
-            print("SPH simulation end ...")
-            break
 
         cnt += 1
         gui.show()
