@@ -31,9 +31,9 @@ if __name__ == "__main__":
             print("save results ...")
             writer = ti.tools.PLYWriter(num_vertices=sph_solver.scene.N[None])
             writer.add_vertex_pos(fluid_pos[:, 0], fluid_pos[:, 1], np.zeros_like(fluid_pos[:, 0]))
-            writer.export_frame_ascii(cnt, f'log/frame_{cnt:06d}')
+            writer.export_frame_ascii(cnt, f'log/frame_{cnt:10d}')
 
-            filename = f'log/frame_{cnt:05d}.png'
+            filename = f'log/frame_{cnt:10d}.png'
             gui.show(filename)
         
         if gui.get_event(ti.GUI.EXIT):
