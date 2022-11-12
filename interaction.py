@@ -34,10 +34,11 @@ if __name__ == "__main__":
                 gui.show(filename)
             elif gui.event.key in [ti.GUI.LMB]:
                 mouse = gui.get_cursor_pos()
-                print("add particles ...", mouse[0], mouse[1])
                 particle_x = mouse[0] * GUI_Resolution[0] / Scale_Ratio
                 particle_y = mouse[1] * GUI_Resolution[1] / Scale_Ratio
-                sph_solver.scene.add_stuff(FLUID, [[particle_x-0.5, particle_x+0.5], [particle_y-0.5, particle_y+0.5]], [0.0, -10.0])
+                if (particle_x - 0.5 > Support_Radius) and (particle_x + 0.5 < GUI_Resolution[0] / Scale_Ratio - Support_Radius) and (particle_y - 0.5 > Support_Radius) and (particle_y + 0.5 < GUI_Resolution[1] / Scale_Ratio - Support_Radius):
+                    print("add particles ...", mouse[0], mouse[1])
+                    sph_solver.scene.add_stuff(FLUID, [[particle_x-0.5, particle_x+0.5], [particle_y-0.5, particle_y+0.5]], [0.0, -10.0])
 
         sph_solver.solve()
         fluid_pos, boundary_pos = sph_solver.scene.get_particle_pos()
