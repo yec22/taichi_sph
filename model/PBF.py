@@ -49,7 +49,7 @@ class PBF:
             self.accleration[p_i] = a
 
             self.scene.v[p_i] += self.accleration[p_i] * self.dt[None]
-            self.scene.x[p_i] += self.scene.v[p_i] * self.dt[None] # dx = v * dt
+            self.scene.x[p_i] += self.scene.v[p_i] * self.dt[None]
     
 
     @ti.kernel
@@ -100,10 +100,7 @@ class PBF:
 
     @ti.func
     def simulate_collisions(self, p_i, vec, d):
-        # Collision factor, assume roughly (1-c_f)*velocity loss after collision
-        c_f = 0.3
         self.scene.x[p_i] += vec * d
-        self.scene.v[p_i] -= (1.0 + c_f) * self.scene.v[p_i].dot(vec) * vec
 
     @ti.kernel
     def handle_boundary(self):
@@ -139,8 +136,9 @@ class PBF:
     # Possion Based Fluid Solver
     def solve(self):
         self.advection() # compute external and viscosity force
+        self.handle_boundary() # handle boundary
         self.scene.search_neighbors() # search neighbors
         for _ in range(PBF_Num_Iters):
             self.modify()
+            self.handle_boundary() # handle boundary
         self.step() # update particle properties
-        self.handle_boundary() # handle boundary
