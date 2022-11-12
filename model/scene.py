@@ -6,8 +6,8 @@ from .settings import *
 @ti.data_oriented
 class Scene:
     def __init__(self):
+        self.scene_idx = 0
         self.N = ti.field(dtype=int, shape=()) # total particle numbers
-        self.fuild_N = ti.field(dtype=int, shape=()) # fluid particle numbers
         self.boundary_N = ti.field(dtype=int, shape=()) # boundary particle numbers
         self.boundary_x = ti.Vector.field(Dim, dtype=ti.float32)
 
@@ -36,7 +36,8 @@ class Scene:
         self.grids.place(self.N_per_grid)
         self.grids.dense(ti.k if Dim == 2 else ti.l, MAX_Particle_Per_Grid).place(self.idx_per_grid)
 
-        self.init_scene()
+        # self.init_scene_1()
+        self.init_scene_2()
 
     def add_stuff(self, stuff_type, pos_dim, v0):
 
@@ -57,9 +58,37 @@ class Scene:
         self.add_particle(particle_num, particle_velocity, particle_pos, particle_density, particle_pressure, particle_type)
         return particle_num
 
-    def init_scene(self):
+    def init_scene_2(self):
         # init the scene
         self.N[None] = 0
+        self.scene_idx = 2
+
+        # add fluid particles
+        particle_num = self.add_stuff(FLUID, [[2.0, 7.0], [1.0, 3.0]], [0.0, -5.0])
+        print('fluid_particle_num', particle_num)
+
+        # add boundary particles
+        # down
+        particle_num = self.add_stuff(BOUNDARY, [[0, GUI_Resolution[0] / Scale_Ratio], [0, Support_Radius + Particle_Radius]], [0.0, 0.0])
+        print('down_boundary_particle_num', particle_num)
+
+        # up
+        particle_num = self.add_stuff(BOUNDARY, [[0, GUI_Resolution[0] / Scale_Ratio], [GUI_Resolution[1] / Scale_Ratio - Support_Radius, GUI_Resolution[1] / Scale_Ratio + Particle_Radius]], [0.0, 0.0])
+        print('up_boundary_particle_num', particle_num)
+
+        # left
+        particle_num = self.add_stuff(BOUNDARY, [[0, Support_Radius], [Support_Radius, GUI_Resolution[1] / Scale_Ratio - Support_Radius]], [0.0, 0.0])
+        print('left_boundary_particle_num', particle_num)
+
+        # right
+        particle_num = self.add_stuff(SOLID, [[GUI_Resolution[0] / Scale_Ratio - Support_Radius, GUI_Resolution[0] / Scale_Ratio + Particle_Radius], [Support_Radius, GUI_Resolution[1] / Scale_Ratio - Support_Radius]], [Board_v0, 0.0])
+        print('right_boundary_particle_num', particle_num)
+
+
+    def init_scene_1(self):
+        # init the scene
+        self.N[None] = 0
+        self.scene_idx = 1
 
         # add fluid_1 particles
         particle_num = self.add_stuff(FLUID, [[2.0, 6.0], [4.0, 6.0]], [0.0, -20.0])
@@ -114,10 +143,7 @@ class Scene:
                 self.boundary_x[self.boundary_N[None]+p] = x
         
         self.N[None] += particle_num
-        if particle_type[0] == FLUID:
-            self.fuild_N[None] += particle_num
-        if particle_type[1] == BOUNDARY:
-            self.boundary_N[None] += particle_num
+        self.boundary_N[None] += particle_num
         
     
     @ti.kernel

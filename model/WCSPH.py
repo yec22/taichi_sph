@@ -13,20 +13,32 @@ class WCSPH:
         self.accleration = ti.Vector.field(Dim, dtype=ti.float32)
         ti.root.dense(ti.i, MAX_Particle_Number).place(self.accleration)
         self.bound = np.array(GUI_Resolution) / Scale_Ratio
+        self.board = ti.field(dtype=ti.float32, shape=())
+        self.board[None] = GUI_Resolution[0] / Scale_Ratio
 
     # update the velocity and position for each particle
     @ti.kernel
-    def step(self):
+    def step(self, cnt: int):
+        self.board[None] = GUI_Resolution[0] / Scale_Ratio
         for i in range(self.scene.N[None]):
+            if self.scene.type[i] == SOLID:
+                self.scene.v[i][0] = Board_v0 * ti.sin(60 * np.pi * cnt * self.dt[None])
+                self.scene.v[i][1] = 0.0
+                self.scene.x[i] += self.scene.v[i] * self.dt[None]
+                self.scene.boundary_x[i] = self.scene.x[i]
+                self.board[None] = ti.min(self.board[None], self.scene.boundary_x[i][0])
             if self.scene.type[i] == BOUNDARY:
                 continue
-            self.scene.v[i] += self.accleration[i] * self.dt[None] # dv = a * dt
-            self.scene.x[i] += self.scene.v[i] * self.dt[None] # dx = v * dt
+            if self.scene.type[i] == FLUID:
+                self.scene.v[i] += self.accleration[i] * self.dt[None] # dv = a * dt
+                self.scene.x[i] += self.scene.v[i] * self.dt[None] # dx = v * dt
     
     @ti.kernel
     def advection(self):
         for p_i in range(self.scene.N[None]):
             if self.scene.type[p_i] == BOUNDARY:
+                continue
+            if self.scene.type[p_i] == SOLID:
                 continue
             # a = g + Viscosity_Coefficient * Laplacian(v)
             # Laplacian(v) is computed via SPH
@@ -44,6 +56,8 @@ class WCSPH:
     def projection(self):
         for p_i in range(self.scene.N[None]):
             if self.scene.type[p_i] == BOUNDARY:
+                continue
+            if self.scene.type[p_i] == SOLID:
                 continue
             # a = - m_i / density_i * Laplacian(pressure)
             # Laplacian(pressure) is computed via SPH
@@ -80,7 +94,9 @@ class WCSPH:
         for p_i in range(self.scene.N[None]):
             if self.scene.type[p_i] == BOUNDARY:
                 continue
-            if Dim == 2:
+            if self.scene.type[p_i] == SOLID:
+                continue
+            if Dim == 2 and self.scene.scene_idx == 1:
                 pos = self.scene.x[p_i]
                 if pos[0] < Support_Radius:
                     self.simulate_collisions(p_i, ti.Vector([1.0, 0.0]), Support_Radius - pos[0])
@@ -104,13 +120,24 @@ class WCSPH:
                     self.simulate_collisions(p_i, ti.Vector([1.0, 0.0]), COLUMN2[0][1] - pos[0])
                 if (COLUMN2[0][0] < pos[0] < COLUMN2[0][1]) and (pos[1] < COLUMN2[1][1] and pos[1] > COLUMN2[1][1] - 0.1):
                     self.simulate_collisions(p_i, ti.Vector([0.0, 1.0]), COLUMN2[1][1] - pos[1])
+            
+            if Dim == 2 and self.scene.scene_idx == 2:
+                pos = self.scene.x[p_i]
+                if pos[0] > self.board[None]:
+                    self.simulate_collisions(p_i, ti.Vector([-1.0, 0.0]), pos[0] - self.board[None])
+                if pos[0] < Support_Radius:
+                    self.simulate_collisions(p_i, ti.Vector([1.0, 0.0]), Support_Radius - pos[0])
+                if pos[1] > self.bound[1] - Support_Radius:
+                    self.simulate_collisions(p_i, ti.Vector([0.0, -1.0]), pos[1] - (self.bound[1] - Support_Radius))
+                if pos[1] < Support_Radius:
+                    self.simulate_collisions(p_i, ti.Vector([0.0, 1.0]), Support_Radius - pos[1])
                 
 
     # Weakly Compressible SPH Solver
-    def solve(self):
+    def solve(self, cnt):
         self.scene.search_neighbors() # search neighbors
         self.compute_pressure() # compute pressure
         self.advection() # compute external and viscosity force
         self.projection() # compute fluid pressure force
-        self.step() # update particle properties
+        self.step(cnt) # update particle properties
         self.handle_boundary() # handle boundary

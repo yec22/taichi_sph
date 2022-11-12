@@ -40,7 +40,7 @@ if __name__ == "__main__":
                     print("add particles ...", mouse[0], mouse[1])
                     sph_solver.scene.add_stuff(FLUID, [[particle_x-0.5, particle_x+0.5], [particle_y-0.5, particle_y+0.5]], [0.0, -10.0])
 
-        sph_solver.solve()
+        sph_solver.solve(cnt)
         fluid_pos, boundary_pos = sph_solver.scene.get_particle_pos()
 
         gui.circles(pos=fluid_pos * Scale_Ratio / GUI_Resolution[0], # range: [0, 1]

@@ -7,7 +7,7 @@ from .utils import *
 class PBF:
     def __init__(self):
         self.scene = Scene()
-        self.dt = ti.field(dtype=ti.float32, shape=()) # WCSPH time step
+        self.dt = ti.field(dtype=ti.float32, shape=()) # PBF time step
         self.dt[None] = 5e-3
         self.m = Density0 * Particle_Volume # mass = density * volume
         self.accleration = ti.Vector.field(Dim, dtype=ti.float32)
@@ -16,14 +16,24 @@ class PBF:
         self.position_deltas = ti.Vector.field(Dim, dtype=ti.float32)
         ti.root.dense(ti.i, MAX_Particle_Number).place(self.accleration, self.old_x, self.lambdas, self.position_deltas)
         self.bound = np.array(GUI_Resolution) / Scale_Ratio
+        self.board = ti.field(dtype=ti.float32, shape=())
+        self.board[None] = GUI_Resolution[0] / Scale_Ratio
 
     # update the velocity and position for each particle
     @ti.kernel
-    def step(self):
+    def step(self, cnt: int):
+        self.board[None] = GUI_Resolution[0] / Scale_Ratio
         for i in range(self.scene.N[None]):
+            if self.scene.type[i] == SOLID:
+                self.scene.v[i][0] = 3.0 * Board_v0 * ti.sin(1.0 * np.pi * cnt * self.dt[None])
+                self.scene.v[i][1] = 0.0
+                self.scene.x[i] += self.scene.v[i] * self.dt[None]
+                self.scene.boundary_x[i] = self.scene.x[i]
+                self.board[None] = ti.min(self.board[None], self.scene.boundary_x[i][0])
             if self.scene.type[i] == BOUNDARY:
                 continue
-            self.scene.v[i] = (self.scene.x[i] - self.old_x[i]) / self.dt[None]
+            if self.scene.type[i] == FLUID:
+                self.scene.v[i] = (self.scene.x[i] - self.old_x[i]) / self.dt[None]
 
     
     @ti.kernel
@@ -31,10 +41,14 @@ class PBF:
         for p_i in range(self.scene.N[None]):
             if self.scene.type[p_i] == BOUNDARY:
                 continue
+            if self.scene.type[p_i] == SOLID:
+                continue
             self.old_x[p_i] = self.scene.x[p_i]
         
         for p_i in range(self.scene.N[None]):
             if self.scene.type[p_i] == BOUNDARY:
+                continue
+            if self.scene.type[p_i] == SOLID:
                 continue
             # a = g + Viscosity_Coefficient * Laplacian(v)
             # Laplacian(v) is computed via SPH
@@ -58,6 +72,8 @@ class PBF:
         for p_i in range(self.scene.N[None]):
             if self.scene.type[p_i] == BOUNDARY:
                 continue
+            if self.scene.type[p_i] == SOLID:
+                continue
             grad_i = ti.Vector.zero(ti.float32, Dim)
             sum_gradient_sqr = 0.0
             density_constraint = 0.0
@@ -79,6 +95,8 @@ class PBF:
         for p_i in range(self.scene.N[None]):
             if self.scene.type[p_i] == BOUNDARY:
                 continue
+            if self.scene.type[p_i] == SOLID:
+                continue
             pos_delta_i = ti.Vector.zero(ti.float32, Dim)
             for j in range(self.scene.neighbor_N[p_i]):
                 p_j = self.scene.neighbor_idx[p_i, j]
@@ -95,6 +113,8 @@ class PBF:
         for i in range(self.scene.N[None]):
             if self.scene.type[i] == BOUNDARY:
                 continue
+            if self.scene.type[i] == SOLID:
+                continue
             self.scene.x[i] += self.position_deltas[i]
 
 
@@ -107,7 +127,9 @@ class PBF:
         for p_i in range(self.scene.N[None]):
             if self.scene.type[p_i] == BOUNDARY:
                 continue
-            if Dim == 2:
+            if self.scene.type[p_i] == SOLID:
+                continue
+            if Dim == 2 and self.scene.scene_idx == 1:
                 pos = self.scene.x[p_i]
                 if pos[0] < Support_Radius:
                     self.simulate_collisions(p_i, ti.Vector([1.0, 0.0]), Support_Radius - pos[0])
@@ -131,14 +153,25 @@ class PBF:
                     self.simulate_collisions(p_i, ti.Vector([1.0, 0.0]), COLUMN2[0][1] - pos[0])
                 if (COLUMN2[0][0] < pos[0] < COLUMN2[0][1]) and (pos[1] < COLUMN2[1][1] and pos[1] > COLUMN2[1][1] - 0.1):
                     self.simulate_collisions(p_i, ti.Vector([0.0, 1.0]), COLUMN2[1][1] - pos[1])
+            
+            if Dim == 2 and self.scene.scene_idx == 2:
+                pos = self.scene.x[p_i]
+                if pos[0] > self.board[None]:
+                    self.simulate_collisions(p_i, ti.Vector([-1.0, 0.0]), pos[0] - self.board[None])
+                if pos[0] < Support_Radius:
+                    self.simulate_collisions(p_i, ti.Vector([1.0, 0.0]), Support_Radius - pos[0])
+                if pos[1] > self.bound[1] - Support_Radius:
+                    self.simulate_collisions(p_i, ti.Vector([0.0, -1.0]), pos[1] - (self.bound[1] - Support_Radius))
+                if pos[1] < Support_Radius:
+                    self.simulate_collisions(p_i, ti.Vector([0.0, 1.0]), Support_Radius - pos[1])
                 
 
     # Possion Based Fluid Solver
-    def solve(self):
+    def solve(self, cnt):
         self.advection() # compute external and viscosity force
         self.handle_boundary() # handle boundary
         self.scene.search_neighbors() # search neighbors
         for _ in range(PBF_Num_Iters):
             self.modify()
             self.handle_boundary() # handle boundary
-        self.step() # update particle properties
+        self.step(cnt) # update particle properties

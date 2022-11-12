@@ -24,7 +24,7 @@ if __name__ == "__main__":
     start_time = time.time()
     while gui.running:
         for i in range(1):
-            sph_solver.solve()
+            sph_solver.solve(cnt)
         fluid_pos, boundary_pos = sph_solver.scene.get_particle_pos()
         gui.circles(pos=fluid_pos * Scale_Ratio / GUI_Resolution[0], # range: [0, 1]
                     radius=Particle_Radius * Visualize_Ratio * Scale_Ratio,
