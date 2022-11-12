@@ -39,6 +39,12 @@ if __name__ == "__main__":
         gui.circles(pos=boundary_pos * Scale_Ratio / GUI_Resolution[0], # range: [0, 1]
                     radius=Particle_Radius * Visualize_Ratio * Scale_Ratio,
                     color=Boundary_Color)
+        
+        mouse = gui.get_cursor_pos()
+        gui.circle((mouse[0], mouse[1]), color=0xff0000, radius=7)
+        if gui.is_pressed(ti.GUI.LMB):
+            print("add particles ...")
+            sph_solver.scene.add_stuff(FLUID, [[mouse[0], mouse[0]+1.0], [mouse[1], mouse[1]+1.0]], [0.0, -10.0])
 
         cnt += 1
         gui.show()

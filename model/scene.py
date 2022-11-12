@@ -45,6 +45,10 @@ class Scene:
         particle_pos = particle_pos.reshape(Dim, -1).transpose(1, 0)
         particle_num = particle_pos.shape[0]
 
+        if self.N[None] + particle_num >= MAX_Particle_Number:
+            print("warning: max particle number!! cannot add anymore!!")
+            return 0
+
         particle_velocity = np.full_like(particle_pos, v0).astype(np.float32)
         particle_density = np.full_like(np.zeros(particle_num), Density0).astype(np.float32)
         particle_pressure = np.full_like(np.zeros(particle_num), 0.0).astype(np.float32)
@@ -61,7 +65,7 @@ class Scene:
         print('fluid1_particle_num', particle_num)
 
         # add fluid_2 particles
-        particle_num = self.add_stuff(FLUID, [[7.5, 9.5], [6.0, 9.0]], [0.0, -10.0])
+        particle_num = self.add_stuff(FLUID, [[7.5, 9.5], [6.0, 9.0]], [0.0, -15.0])
         print('fluid2_particle_num', particle_num)
 
         # add boundary particles
