@@ -29,9 +29,6 @@ if __name__ == "__main__":
                 writer = ti.tools.PLYWriter(num_vertices=sph_solver.scene.N[None])
                 writer.add_vertex_pos(fluid_pos[:, 0], fluid_pos[:, 1], np.zeros_like(fluid_pos[:, 0]))
                 writer.export_frame_ascii(cnt, f'log/frame_{cnt:08d}')
-
-                filename = f'log/frame_{cnt:08d}.png'
-                gui.show(filename)
             elif gui.event.key in [ti.GUI.LMB]:
                 mouse = gui.get_cursor_pos()
                 particle_x = mouse[0] * GUI_Resolution[0] / Scale_Ratio
