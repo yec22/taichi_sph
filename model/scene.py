@@ -37,8 +37,8 @@ class Scene:
         self.grids.dense(ti.k if Dim == 2 else ti.l, MAX_Particle_Per_Grid).place(self.idx_per_grid)
 
         ##### you can change the scene here !!!!! #####
-        # self.init_scene_1()
-        self.init_scene_2()
+        self.init_scene_1()
+        # self.init_scene_2()
 
     def add_stuff(self, stuff_type, pos_dim, v0):
         # add particles with differenct properties
