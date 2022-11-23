@@ -28,4 +28,5 @@ python interaction.py
 ```
 
 (注：目前支持两种场景，在model/scene.py的第40-41行可以自行更改。)
+
 (注：如有问题可以联系叶盛，邮箱yec22@mails.tsinghua.edu.cn，微信ys15510562705)

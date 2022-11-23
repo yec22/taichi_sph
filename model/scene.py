@@ -96,7 +96,7 @@ class Scene:
         print('fluid1_particle_num', particle_num)
 
         # add fluid_2 particles
-        particle_num = self.add_stuff(FLUID, [[7.5, 9.5], [6.0, 9.0]], [0.0, -15.0])
+        particle_num = self.add_stuff(FLUID, [[7.5, 9.5], [6.0, 9.0]], [0.0, -10.0])
         print('fluid2_particle_num', particle_num)
 
         # add boundary particles
