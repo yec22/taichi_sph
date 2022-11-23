@@ -6,8 +6,8 @@ from .utils import *
 @ti.data_oriented
 class PBF:
     def __init__(self):
-        self.scene = Scene()
-        self.dt = ti.field(dtype=ti.float32, shape=()) # PBF time step
+        self.scene = Scene() # define the scene
+        self.dt = ti.field(dtype=ti.float32, shape=()) # PBF time step (larger than WCSPH)
         self.dt[None] = 5e-3
         self.m = Density0 * Particle_Volume # mass = density * volume
         self.accleration = ti.Vector.field(Dim, dtype=ti.float32)
@@ -24,16 +24,16 @@ class PBF:
     def step(self, cnt: int):
         self.board[None] = GUI_Resolution[0] / Scale_Ratio
         for i in range(self.scene.N[None]):
-            if self.scene.type[i] == SOLID:
+            if self.scene.type[i] == SOLID: # moving board
                 self.scene.v[i][0] = 3.0 * Board_v0 * ti.sin(1.0 * np.pi * cnt * self.dt[None])
                 self.scene.v[i][1] = 0.0
                 self.scene.x[i] += self.scene.v[i] * self.dt[None]
                 self.scene.boundary_x[i] = self.scene.x[i]
                 self.board[None] = ti.min(self.board[None], self.scene.boundary_x[i][0])
-            if self.scene.type[i] == BOUNDARY:
+            if self.scene.type[i] == BOUNDARY: # boundary particles always stay still
                 continue
-            if self.scene.type[i] == FLUID:
-                self.scene.v[i] = (self.scene.x[i] - self.old_x[i]) / self.dt[None]
+            if self.scene.type[i] == FLUID: # fluid particles
+                self.scene.v[i] = (self.scene.x[i] - self.old_x[i]) / self.dt[None] # v = dx / dt
 
     
     @ti.kernel
@@ -43,7 +43,7 @@ class PBF:
                 continue
             if self.scene.type[p_i] == SOLID:
                 continue
-            self.old_x[p_i] = self.scene.x[p_i]
+            self.old_x[p_i] = self.scene.x[p_i] # store the old position
         
         for p_i in range(self.scene.N[None]):
             if self.scene.type[p_i] == BOUNDARY:
@@ -62,8 +62,8 @@ class PBF:
                 a += viscosity_accleration
             self.accleration[p_i] = a
 
-            self.scene.v[p_i] += self.accleration[p_i] * self.dt[None]
-            self.scene.x[p_i] += self.scene.v[p_i] * self.dt[None]
+            self.scene.v[p_i] += self.accleration[p_i] * self.dt[None] # update v
+            self.scene.x[p_i] += self.scene.v[p_i] * self.dt[None] # update x
     
 
     @ti.kernel
@@ -175,3 +175,4 @@ class PBF:
             self.modify()
             self.handle_boundary() # handle boundary
         self.step(cnt) # update particle properties
+

@@ -50,6 +50,7 @@ def smooth_kernel_derivative(r):
             res = k * (-factor * factor) * grad_q
     return res
 
+# reference: Macklin, M. and Müller, M., 2013. Position based fluids. ACM Transactions on Graphics (TOG), 32(4), p.104.
 @ti.func
 def spiky_gradient(r, h):
     res = ti.Vector.zero(ti.float32, Dim)
@@ -72,7 +73,6 @@ def poly6_value(s, h):
 
 @ti.func
 def compute_scorr(pos_ji):
-    # Eq (13)
     x = poly6_value(pos_ji.norm(), H) / poly6_value(Corr_DeltaQ_Coeff * H, H)
     # pow(x, 4)
     x = x * x

@@ -6,8 +6,8 @@ from .utils import *
 @ti.data_oriented
 class WCSPH:
     def __init__(self):
-        self.scene = Scene()
-        self.dt = ti.field(dtype=ti.float32, shape=()) # WCSPH time step
+        self.scene = Scene() # define the scene
+        self.dt = ti.field(dtype=ti.float32, shape=()) # WCSPH time step (smaller than PBF)
         self.dt[None] = 2e-4
         self.m = Density0 * Particle_Volume # mass = density * volume
         self.accleration = ti.Vector.field(Dim, dtype=ti.float32)
@@ -21,15 +21,15 @@ class WCSPH:
     def step(self, cnt: int):
         self.board[None] = GUI_Resolution[0] / Scale_Ratio
         for i in range(self.scene.N[None]):
-            if self.scene.type[i] == SOLID:
+            if self.scene.type[i] == SOLID: # moving board
                 self.scene.v[i][0] = Board_v0 * ti.sin(60 * np.pi * cnt * self.dt[None])
                 self.scene.v[i][1] = 0.0
                 self.scene.x[i] += self.scene.v[i] * self.dt[None]
                 self.scene.boundary_x[i] = self.scene.x[i]
                 self.board[None] = ti.min(self.board[None], self.scene.boundary_x[i][0])
-            if self.scene.type[i] == BOUNDARY:
+            if self.scene.type[i] == BOUNDARY: # boundary particles always stay still
                 continue
-            if self.scene.type[i] == FLUID:
+            if self.scene.type[i] == FLUID: # fluid particles
                 self.scene.v[i] += self.accleration[i] * self.dt[None] # dv = a * dt
                 self.scene.x[i] += self.scene.v[i] * self.dt[None] # dx = v * dt
     
@@ -141,3 +141,4 @@ class WCSPH:
         self.projection() # compute fluid pressure force
         self.step(cnt) # update particle properties
         self.handle_boundary() # handle boundary
+

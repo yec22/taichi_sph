@@ -6,6 +6,7 @@ import time
 
 ti.init(arch=ti.gpu, device_memory_GB=4, packed=True)
 
+# synthesize video from muliple images
 def generate_video(img_dir, fps):
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     video_writer = cv2.VideoWriter("fluid_simulation_wcsph.mp4", fourcc, fps, GUI_Resolution)
@@ -17,21 +18,27 @@ def generate_video(img_dir, fps):
 
 
 if __name__ == "__main__":
-    
+    # initialization
     sph_solver = WCSPH()
     gui = ti.GUI(background_color=Background_Color, show_gui=False, res=GUI_Resolution)
     cnt = 0
     start_time = time.time()
+
+    # gui loop
     while gui.running:
+        # solve sph
         for i in range(100):
             sph_solver.solve(cnt)
         fluid_pos, boundary_pos = sph_solver.scene.get_particle_pos()
+
+        # visualization
         gui.circles(pos=fluid_pos * Scale_Ratio / GUI_Resolution[0], # range: [0, 1]
                     radius=Particle_Radius * Visualize_Ratio * Scale_Ratio,
                     color=Particle_Color)
         gui.circles(pos=boundary_pos * Scale_Ratio / GUI_Resolution[0], # range: [0, 1]
                     radius=Particle_Radius * Visualize_Ratio * Scale_Ratio,
                     color=Boundary_Color)
+        
         cnt += 1
         if cnt > 500:
             break
@@ -39,6 +46,7 @@ if __name__ == "__main__":
             os.mkdir('log')
         filename = f'log/frame_{cnt:05d}.png'
         gui.show(filename)
+    
     end_time = time.time()
     print(f'program runtime: {end_time-start_time}s')
 

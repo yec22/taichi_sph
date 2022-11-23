@@ -36,11 +36,12 @@ class Scene:
         self.grids.place(self.N_per_grid)
         self.grids.dense(ti.k if Dim == 2 else ti.l, MAX_Particle_Per_Grid).place(self.idx_per_grid)
 
+        ##### you can change the scene here !!!!! #####
         # self.init_scene_1()
         self.init_scene_2()
 
     def add_stuff(self, stuff_type, pos_dim, v0):
-
+        # add particles with differenct properties
         particle_pos_dim = [np.arange(pos_dim[0][0], pos_dim[0][1], Particle_Radius),
                             np.arange(pos_dim[1][0], pos_dim[1][1], Particle_Radius)]
         particle_pos = np.array(np.meshgrid(*particle_pos_dim, indexing='ij'), dtype=np.float32)
@@ -148,6 +149,7 @@ class Scene:
     
     @ti.kernel
     def allocate(self):
+        # allocate grid for each particle (to efficiently search neighbors)
         for i in range(self.N[None]):
             grid_idx = (self.x[i] / Support_Radius).cast(int)
             grid_offset = ti.atomic_add(self.N_per_grid[grid_idx], 1)
@@ -155,6 +157,7 @@ class Scene:
 
     @ti.kernel
     def local_search(self):
+        # search neighbors only in nearby grids (3**Dim)
         for p_i in range(self.N[None]):
             center_grid_idx = (self.x[p_i] / Support_Radius).cast(int)
             n_neighbors = 0
@@ -195,6 +198,7 @@ class Scene:
         self.local_search()
 
     def get_particle_pos(self):
+        # for visualization
         fluid_pos = np.ndarray((self.N[None], Dim), dtype=np.float32)
         self.copy2numpy(self.N[None], self.x, fluid_pos)
 

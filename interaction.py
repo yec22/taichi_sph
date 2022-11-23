@@ -5,9 +5,8 @@ import os
 
 ti.init(arch=ti.cpu)
 
-
 if __name__ == "__main__":
-
+    # initialization
     if not os.path.exists('log'):
         os.mkdir('log')
 
@@ -16,10 +15,12 @@ if __name__ == "__main__":
     gui = ti.GUI(background_color=Background_Color, show_gui=True, res=GUI_Resolution)
     cnt = 0
 
+    # gui loop
     while gui.running:
         mouse = gui.get_cursor_pos()
         gui.circle((mouse[0], mouse[1]), color=0xff0000, radius=7)
 
+        # handle events
         if gui.get_event(ti.GUI.PRESS):
             if gui.event.key == 'q':
                 print("SPH simulation end ...")
@@ -37,9 +38,11 @@ if __name__ == "__main__":
                     print("add particles ...", mouse[0], mouse[1])
                     sph_solver.scene.add_stuff(FLUID, [[particle_x-0.5, particle_x+0.5], [particle_y-0.5, particle_y+0.5]], [0.0, -10.0])
 
+        # solve sph
         sph_solver.solve(cnt)
         fluid_pos, boundary_pos = sph_solver.scene.get_particle_pos()
 
+        # visualization
         gui.circles(pos=fluid_pos * Scale_Ratio / GUI_Resolution[0], # range: [0, 1]
                     radius=Particle_Radius * Visualize_Ratio * Scale_Ratio,
                     color=Particle_Color)
